@@ -1,227 +1,267 @@
-%{
-//#define flex_debug_print
-    #include <stdio.h>
-    #include <stdlib.h>
-    #include "syntax.tab.h"
-    #include "syntax_tree.h"
-
-    
-    // 维护词法单元的位置信息
-    int yycolumn = 1;
-    #define YY_USER_ACTION \
-    yylloc.first_line = yylloc.last_line = yylineno; \
-    yylloc.first_column = yycolumn; \
-    yylloc.last_column = yycolumn + yyleng - 1; \
-    yycolumn += yyleng;
-
-    void print_loc_info(char* name);
-    enum RelopType
-    {
-        less = 0,
-        more,
-        less_equal,
-        more_equal,
-        equal,
-        not_equal
-    };
-%}
 
 %option yylineno
-digit [0-9]
-letter [a-zA-Z_]
-ws [ \t\n]
 
-%%
-\n    { 
-    yycolumn = 1;
-}
-{ws}+    { print_loc_info("find white space"); }
-";"    {
-    print_loc_info("SEMI");
-    yylval.type_node = (void *)new_token_node(yylloc.first_line, yylloc.first_column, "SEMI");
-    return SEMI;
-}
-","    {
-    print_loc_info("COMMA");
-    yylval.type_node = new_token_node(yylloc.first_line, yylloc.first_column, "COMMA");
-    return COMMA;
-}
-"="    {
-    print_loc_info("ASSIGNOP");
-    yylval.type_node = new_token_node(yylloc.first_line, yylloc.first_column, "ASSIGNOP");
-    return ASSIGNOP;
-}
-"<"    {
-    print_loc_info("RELOP-less");
-    yylval.type_node = new_token_node(yylloc.first_line, yylloc.first_column, "RELOP");
-    return RELOP;
-}
-">"    {
-    print_loc_info("RELOP-more");
-    yylval.type_node = new_token_node(yylloc.first_line, yylloc.first_column, "RELOP");
-    return RELOP;
-}
-"<="    {
-    print_loc_info("RELOP-less_equal");
-    yylval.type_node = new_token_node(yylloc.first_line, yylloc.first_column, "RELOP");
-    return RELOP;
-}
-">="    {
-    print_loc_info("RELOP-more_equal");
-    yylval.type_node = new_token_node(yylloc.first_line, yylloc.first_column, "RELOP");
-    return RELOP;
-}
-"=="    {
-    print_loc_info("RELOP-equal");
-    yylval.type_node = new_token_node(yylloc.first_line, yylloc.first_column, "RELOP");
-    return RELOP;
-}
-"!="    {
-    print_loc_info("RELOP-not_equal");
-    yylval.type_node = new_token_node(yylloc.first_line, yylloc.first_column, "RELOP");
-    return RELOP;
-}
-"+"    {
-    print_loc_info("PLUS");
-    yylval.type_node = new_token_node(yylloc.first_line, yylloc.first_column, "PLUS");
-    return PLUS;
-}
-"-"    {
-    print_loc_info("MINUS");
-    yylval.type_node = new_token_node(yylloc.first_line, yylloc.first_column, "MINUS");
-    return MINUS;
-}
-"*"    {
-    print_loc_info("STAR");
-    yylval.type_node = new_token_node(yylloc.first_line, yylloc.first_column, "STAR");
-    return STAR;
-}
-"/"    {
-    print_loc_info("DIV");
-    yylval.type_node = new_token_node(yylloc.first_line, yylloc.first_column, "DIV");
-    return DIV;
-}
-"&&"    {
-    print_loc_info("AND");
-    yylval.type_node = new_token_node(yylloc.first_line, yylloc.first_column, "AND");
-    return AND;
-}
-"||"   {
-    print_loc_info("OR");
-    yylval.type_node = new_token_node(yylloc.first_line, yylloc.first_column, "OR");
-    return OR;
-}
-"."    {
-    print_loc_info("DOT");
-    yylval.type_node = new_token_node(yylloc.first_line, yylloc.first_column, "DOT");
-    return DOT;
-}
-"!"    {
-    print_loc_info("NOT");
-    yylval.type_node = new_token_node(yylloc.first_line, yylloc.first_column, "NOT");
-    return NOT;
-}
-int    {
-    print_loc_info("TYPE-int");
-    yylval.type_node = new_token_node(yylloc.first_line, yylloc.first_column, "TYPE: int");
-    return TYPE;
-}
-float    {
-    print_loc_info("TYPE-float");
-    yylval.type_node = new_token_node(yylloc.first_line, yylloc.first_column, "TYPE: float");
-    return TYPE;
-}
-"("    {
-    print_loc_info("LP");
-    yylval.type_node = new_token_node(yylloc.first_line, yylloc.first_column, "LP");
-    return LP;
-}
-")"    {
-    print_loc_info("RP");
-    yylval.type_node = new_token_node(yylloc.first_line, yylloc.first_column, "RP");
-    return RP;
-}
-"["    {
-    print_loc_info("LB");
-    yylval.type_node = new_token_node(yylloc.first_line, yylloc.first_column, "LB");
-    return LB;
-}
-"]"    {
-    print_loc_info("RB");
-    yylval.type_node = new_token_node(yylloc.first_line, yylloc.first_column, "RB");
-    return RB;
-}
-"{"    {
-    print_loc_info("LC");
-    yylval.type_node = new_token_node(yylloc.first_line, yylloc.first_column, "LC");
-    return LC;
-}
-"}"    {
-    print_loc_info("RC");
-    yylval.type_node = new_token_node(yylloc.first_line, yylloc.first_column, "RC");
-    return RC;
-}
-struct    {
-    print_loc_info("STRUCT");
-    yylval.type_node = new_token_node(yylloc.first_line, yylloc.first_column, "STRUCT");
-    return STRUCT;
-}
-return    {
-    print_loc_info("RETURN");
-    yylval.type_node = new_token_node(yylloc.first_line, yylloc.first_column, "RETURN");
-    return RETURN;
-}
-if    {
-    print_loc_info("IF");
-    yylval.type_node = new_token_node(yylloc.first_line, yylloc.first_column, "IF");
-    return IF;
-}
-else    {
-    print_loc_info("ELSE");
-    yylval.type_node = new_token_node(yylloc.first_line, yylloc.first_column, "ELSE");
-    return ELSE;
-}
-while    { 
-    print_loc_info("WHILE");
-    yylval.type_node = new_token_node(yylloc.first_line, yylloc.first_column, "WHILE");
-    return WHILE;
-}
-0|[1-9]{digit}*    { 
-    //yylval=atoi(yytext);
-    char print_output[50];
-    int value = atoi(yytext);
-    snprintf(print_output, sizeof(print_output), "INT: %d", value);
-    print_loc_info(print_output);
-    yylval.type_node = new_token_node(yylloc.first_line, yylloc.first_column, print_output);
-    return INT;
-}
-(({digit}*\.{digit}+)|({digit}+\.{digit}*))([Ee][+-]?[0-9]+)?    {
-    //yylval.type_node = atof(yytext);
-    char print_output[50];
-    float value = atof(yytext);
-    snprintf(print_output, sizeof(print_output), "FLOAT: %f", value);
-    print_loc_info(print_output);
-    yylval.type_node = new_token_node(yylloc.first_line, yylloc.first_column, print_output);
-    return FLOAT;
-}
-{letter}({letter}|{digit})*    {
-    char print_output[50];
-    snprintf(print_output, sizeof(print_output), "ID: %s", yytext);
-    print_loc_info(print_output);
-    yylval.type_node = new_token_node(yylloc.first_line, yylloc.first_column, print_output);
-    return ID;
-}
-.    {
-    printf("Error Type A at line %d: ", yylloc.first_line);
-    printf("Mysterious character \"%s\"\n", yytext);
-    yyterminate();
-}
+%{
+
+	#include <stdio.h>
+	#include <string.h>
+
+	#include "def.h"
+	#include "syntax.tab.h"
+	#include "syntaxtree.h"
+	#include "symboltable.h"
+
+	extern bool gError;
+	extern SymbolTable gSymbolTable;
+
+	static Attribute attr;
+
+	int parseOct(const char* str) {
+		int value;
+		sscanf(str, "%o", &value);
+		return value;
+	}
+
+	int parseDec(const char* str) {
+		int value;
+		sscanf(str, "%d", &value);
+		return value;
+	}
+
+	int parseHex(const char* str) {
+		int value;
+		sscanf(str, "%x", &value);
+		return value;
+	}
+
+	float parseFloat(const char *str) {
+		float value;
+		sscanf(str, "%f", &value);
+		return value;
+	}
+
+%}
+
+SEMI		;
+COMMA		,
+
+ASSIGNOP	=
+RELOP		>|<|>=|<=|==|!=
+PLUS		\+
+MINUS		-
+STAR		\*
+DIV		\/
+AND		&&
+OR		\|\|
+NOT		!
+DOT		\.
+
+TYPE		int|float
+
+LP		\(
+RP		\)
+LB		\[
+RB		\]
+LC		\{
+RC		\}
+
+STRUCT		struct
+RETURN		return
+IF		if
+ELSE		else
+WHILE		while
+
+WHITESPACE	[ \t\n]+
+
+OCTINT		0[0-7]+
+DECINT		0|([1-9][0-9]*)
+HEXINT		0[xX][0-9a-fA-F]+
+
+FLOAT		([0-9]+\.[0-9]*)|(\.[0-9]+)
+
+ID		[_a-zA-Z][_a-zA-Z0-9]*
+
+ILLEGALOCT	0[^xX][0-9a-zA-Z]+
+ILLEGALHEX	0[xX][0-9a-zA-Z]+
+
+UNKNOWN		.
 
 %%
 
-void print_loc_info(char* name)
-{
-#ifdef flex_debug_print
-    printf("%s: line--%d; column--%d\n", name, yylloc.first_line, yylloc.first_column);
-#endif
-}
+{SEMI}		{
+	log("SEMI");
+	yylval = node_a(SEMI);
+	return SEMI; }
+{COMMA}		{
+	log("COMMA");
+	yylval = node_a(COMMA);
+	return COMMA; }
+
+{ASSIGNOP}	{
+	log("ASSIGNOP");
+	yylval = node_a(ASSIGNOP);
+	return ASSIGNOP; }
+{RELOP}		{
+	log_a("RELOP");
+	if (yytext[0] == '>') {
+		if (strlen(yytext) == 2) { // >=
+			attr.relopType = GE;
+		}
+		else { // >
+			attr.relopType == LT;
+		}
+	}
+	else if (yytext[0] == '<') {
+		if (strlen(yytext) == 2) { // <=
+			attr.relopType = LE;
+		}
+		else { // <
+			attr.relopType = LT;
+		}
+	}
+	else if (yytext[0] == '=') { // ==
+		attr.relopType = EQ;
+	}
+	else { // !=
+		attr.relopType = NE;
+	}
+	yylval = node_a(RELOP);
+	return RELOP; }
+{PLUS}		{
+	log("PLUS");
+	yylval = node_a(PLUS);
+	return PLUS; }
+{MINUS}		{
+	log("MINUS");
+	yylval = node_a(MINUS);
+	return MINUS; }
+{STAR}		{
+	log("STAR");
+	yylval = node_a(STAR);
+	return STAR; }
+{DIV}		{
+	log("DIV");
+	yylval = node_a(DIV);
+	return DIV; }
+{AND}		{
+	log("AND");
+	yylval = node_a(AND);
+	return AND; }
+{OR}		{
+	log("OR");
+	yylval = node_a(OR);
+	return OR; }
+{NOT}		{
+	log("NOT");
+	yylval = node_a(NOT);
+	return NOT; }
+{DOT}		{
+	log("DOT");
+	yylval = node_a(DOT);
+	return DOT; }
+
+{TYPE}		{
+	log_a("TYPE");
+	if (yytext[0] == 'i') {
+		attr.typeType = T_INT;
+	}
+	else {
+		attr.typeType = T_FLOAT;	
+	}
+	yylval = node_a(TYPE);
+	return TYPE; }
+
+{LP}		{
+	log("LP");
+	yylval = node_a(LP);
+	return LP; }
+{RP}		{
+	log("RP");
+	yylval = node_a(RP);
+	return RP; }
+{LB}		{
+	log("LB");
+	yylval = node_a(LB);
+	return LB; }
+{RB}		{
+	log("RB");
+	yylval = node_a(RB);
+	return RB; }
+{LC}		{
+	log("LC");
+	yylval = node_a(LC);
+	return LC; }
+{RC}		{
+	log("RC");
+	yylval = node_a(RC);
+	return RC; }
+
+{STRUCT}	{
+	log("STRUCT");
+	yylval = node_a(STRUCT);
+	return STRUCT; }
+{RETURN}	{
+	log("RETURN");
+	yylval = node_a(RETURN);
+	return RETURN; }
+{IF}		{
+	log("IF");
+	yylval = node_a(IF);
+	return IF; }
+{ELSE}		{
+	log("ELSE");
+	yylval = node_a(ELSE);
+	return ELSE; }
+{WHILE}		{
+	log("WHILE");
+	yylval = node_a(WHILE);
+	return WHILE; }
+
+{WHITESPACE}	{ /* log("WHITESPACE"); */ }
+
+{OCTINT}	{
+	log_a("OCTINT");
+	attr.intValue = parseOct(yytext);
+	yylval = node_a(INT);
+	return INT; }
+{DECINT}	{
+	log_a("DECINT");
+	attr.intValue = parseDec(yytext);
+	yylval = node_a(INT);
+	return INT; }
+{HEXINT}	{
+	log_a("HEXINT");
+	attr.intValue = parseHex(yytext);
+	yylval = node_a(INT);
+	return INT; }
+
+{FLOAT}		{
+	log_a("FLOAT");
+	attr.floatValue = parseFloat(yytext);
+	yylval = node_a(FLOAT);
+	return FLOAT; }
+
+{ID}		{
+	log_a("ID");
+	attr.id = insertSymbol(gSymbolTable, yytext, NULL);
+	yylval = node_a(ID);
+	return ID; }
+
+{ILLEGALOCT}	{
+	printf("Error type A at Line %d: Illegal octal number '%s'\n", yylineno, yytext);
+	gError = true;
+	yylval = node_a(INT);
+	return INT; }
+
+{ILLEGALHEX}	{
+	printf("Error type A at Line %d: Illegal hexadecimal number '%s'\n", yylineno, yytext);
+	gError = true;
+	yylval = node_a(INT);
+	return INT; }
+
+{UNKNOWN}	{
+	printf("Error type A at Line %d: Undefined character '%s'\n", yylineno, yytext);
+	gError = true; }
+
+%%
+
